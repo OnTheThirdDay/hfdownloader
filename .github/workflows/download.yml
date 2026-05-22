@@ -16,26 +16,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        # This step pulls your repo into the runner so 'gh' knows where it is
         uses: actions/checkout@v4
 
       - name: Install Hugging Face CLI
         run: pip install huggingface_hub
 
-      - name: Sanitize Model ID for Filesystem
+      - name: Sanitize Model ID
         id: sanitize
         run: |
           SAFE_NAME=$(echo "${{ github.event.inputs.model_id }}" | tr '/' '_')
           echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
 
       - name: Download Model
+        # Added exclusions so it doesn't waste time downloading TensorFlow/Flax weights
         run: |
           hf download ${{ github.event.inputs.model_id }} \
-            --local-dir ${{ steps.sanitize.outputs.safe_name }}
+            --local-dir ${{ steps.sanitize.outputs.safe_name }} \
+            --exclude "*.h5" "*.msgpack" "*.ot"
 
-      - name: Zip the Model
+      - name: Zip and Split the Model
         run: |
+          # 1. Zip the model folder
           zip -r ${{ steps.sanitize.outputs.safe_name }}.zip ${{ steps.sanitize.outputs.safe_name }}
+          
+          # 2. Split the zip into 1.5GB chunks to bypass the 2GB GitHub limit
+          # This creates files ending in .part_aa, .part_ab, etc.
+          split -b 1500M ${{ steps.sanitize.outputs.safe_name }}.zip ${{ steps.sanitize.outputs.safe_name }}.zip.part_
 
       - name: Create Release and Upload
         env:
@@ -43,6 +49,7 @@ jobs:
         run: |
           TAG_NAME="model-$(date +'%Y%m%d%H%M%S')"
           
-          gh release create "$TAG_NAME" ${{ steps.sanitize.outputs.safe_name }}.zip \
+          # Upload all the split chunks simultaneously
+          gh release create "$TAG_NAME" ${{ steps.sanitize.outputs.safe_name }}.zip.part_* \
             --title "Model: ${{ github.event.inputs.model_id }}" \
             --notes "Automated download of ${{ github.event.inputs.model_id }}"
