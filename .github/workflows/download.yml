@@ -28,11 +28,12 @@ jobs:
           echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
 
       - name: Download Model
-        # Added exclusions so it doesn't waste time downloading TensorFlow/Flax weights
         run: |
           hf download ${{ github.event.inputs.model_id }} \
             --local-dir ${{ steps.sanitize.outputs.safe_name }} \
-            --exclude "*.h5" "*.msgpack" "*.ot"
+            --exclude "*.h5" \
+            --exclude "*.msgpack" \
+            --exclude "*.ot"
 
       - name: Zip and Split the Model
         run: |
