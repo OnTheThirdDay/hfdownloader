@@ -1,0 +1,46 @@
+name: Fetch Model to Release
+on:
+  workflow_dispatch:
+    inputs:
+      model_id:
+        description: 'Hugging Face Model ID (e.g., google/flan-t5-small)'
+        required: true
+        default: 'google/flan-t5-small'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  download-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Hugging Face CLI
+        run: pip install huggingface_hub
+
+      - name: Sanitize Model ID for Filesystem
+        id: sanitize
+        run: |
+          # Replaces "/" with "_" so "google/flan-t5-small" becomes "google_flan-t5-small"
+          # This prevents zip/folder naming issues.
+          SAFE_NAME=$(echo "${{ github.event.inputs.model_id }}" | tr '/' '_')
+          echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Download Model
+        run: |
+          huggingface-cli download ${{ github.event.inputs.model_id }} \
+            --local-dir ${{ steps.sanitize.outputs.safe_name }}
+
+      - name: Zip the Model
+        run: |
+          zip -r ${{ steps.sanitize.outputs.safe_name }}.zip ${{ steps.sanitize.outputs.safe_name }}
+
+      - name: Create Release and Upload
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="model-$(date +'%Y%m%d%H%M%S')"
+          
+          gh release create "$TAG_NAME" ${{ steps.sanitize.outputs.safe_name }}.zip \
+            --title "Model: ${{ github.event.inputs.model_id }}" \
+            --notes "Automated download of ${{ github.event.inputs.model_id }}"
