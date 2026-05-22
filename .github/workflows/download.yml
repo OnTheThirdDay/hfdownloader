@@ -15,6 +15,10 @@ jobs:
   download-and-release:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        # This step pulls your repo into the runner so 'gh' knows where it is
+        uses: actions/checkout@v4
+
       - name: Install Hugging Face CLI
         run: pip install huggingface_hub
 
@@ -25,7 +29,6 @@ jobs:
           echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
 
       - name: Download Model
-        # Updated to use the modern 'hf' command
         run: |
           hf download ${{ github.event.inputs.model_id }} \
             --local-dir ${{ steps.sanitize.outputs.safe_name }}
