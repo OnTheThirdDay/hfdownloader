@@ -21,14 +21,13 @@ jobs:
       - name: Sanitize Model ID for Filesystem
         id: sanitize
         run: |
-          # Replaces "/" with "_" so "google/flan-t5-small" becomes "google_flan-t5-small"
-          # This prevents zip/folder naming issues.
           SAFE_NAME=$(echo "${{ github.event.inputs.model_id }}" | tr '/' '_')
           echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
 
       - name: Download Model
+        # Updated to use the modern 'hf' command
         run: |
-          huggingface-cli download ${{ github.event.inputs.model_id }} \
+          hf download ${{ github.event.inputs.model_id }} \
             --local-dir ${{ steps.sanitize.outputs.safe_name }}
 
       - name: Zip the Model
