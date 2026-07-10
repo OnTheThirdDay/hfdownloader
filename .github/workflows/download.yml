@@ -37,7 +37,7 @@ jobs:
       - name: Download Model
         run: |
           HF_REPO_TYPE_ARGS=()
-          if [ "${{ github.event.inputs.is_dataset }}" ="true" ]; then
+          if [ "${{ github.event.inputs.is_dataset }}" = "true" ]; then
             HF_REPO_TYPE_ARGS=(--repo-type dataset)
           fi
 
