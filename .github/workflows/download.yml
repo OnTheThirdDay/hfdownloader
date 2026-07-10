@@ -8,11 +8,11 @@ on:
         default: 'google/flan-t5-small'
         type: string
 
-    is_dataset:
-      description: 'Is this a HuggingFace dataset?'
-      required: true
-      default: false
-      type: boolean
+      is_dataset:
+        description: 'Is this a HuggingFace dataset?'
+        required: true
+        default: false
+        type: boolean
 
 
 permissions:
